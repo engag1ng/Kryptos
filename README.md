@@ -14,7 +14,9 @@ Installation Guide:
 7. Now you can use KeyPass by running the Shortcut.
 
 Lincense:
-All rights are reserved to the original publisher of the program. You are free to use sections of the code for private and commercial use. 
+All rights are reserved to the original publisher of the program. This lincense overwrites the right to use KeyPass for commercial use but you are allowed to use **sections of the code** for private and commercial use. 
 
 How to contribute:
 If you want to contribute to KeyPass you're always welcome to create a pull request.
+
+engag1ng
