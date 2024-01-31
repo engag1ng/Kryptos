@@ -18,6 +18,6 @@ KeyPass can generate, store and search for passwords in your database. It uses C
 All rights are reserved to the original publisher of the program. This lincense overwrites the right to use KeyPass. ***Sections of the code*** up to **50 lines** of code can be used for private and commercial use. 
 
 ## How to contribute:
-If you want to contribute to KeyPass you're always welcome to create a pull request.
+If you want to contribute to KeyForU you're always welcome to create a pull request.
 
 engag1ng
