@@ -1,4 +1,4 @@
-# Kite
+# Kryptos
 Kite is a modern password manager completely written in Python...
 
 ✅Free
@@ -8,7 +8,7 @@ Kite is a modern password manager completely written in Python...
 ✅Safe
 
 ## Description:
-If you reuse passwords, you run the risk of hackers getting into your account. Kite generates, stores and searches unique passwords for all your accounts, makes the data transferable across devices and much more to keep you safe online.
+If you reuse passwords, you run the risk of hackers getting into your account. Kryptos generates, stores and searches unique passwords for all your accounts, makes the data transferable across devices and much more to keep you safe online.
 
 ## Todo:
 - [ ] Interface
