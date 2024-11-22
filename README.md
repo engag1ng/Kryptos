@@ -1,5 +1,5 @@
 # Kryptos
-Kite is a modern password manager completely written in Python...
+Kryptos is a modern password manager completely written in Python...
 
 ✅Free
 
