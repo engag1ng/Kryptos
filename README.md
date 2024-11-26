@@ -17,6 +17,7 @@ If you reuse passwords, you run the risk of hackers getting into your account. K
 - [ ] Generate random passwords
 - [x] Search Password
 - [ ] Encrypt database
+- [ ] Configuration
 
 ## Installation Guide:
 Coming soon...
