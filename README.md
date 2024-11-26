@@ -14,7 +14,7 @@ If you reuse passwords, you run the risk of hackers getting into your account. K
 - [x] Interface
 - [x] Create and delete passwords
 - [x] Edit entries
-- [ ] Generate random passwords
+- [x] Generate random passwords
 - [x] Search Password
 - [ ] Encrypt database
 - [ ] Configuration
