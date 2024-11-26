@@ -18,6 +18,7 @@ If you reuse passwords, you run the risk of hackers getting into your account. K
 - [x] Search Password
 - [ ] Encrypt database
 - [ ] Configuration
+- [ ] Multiple databases
 
 ## Installation Guide:
 Coming soon...
