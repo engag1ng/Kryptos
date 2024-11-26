@@ -13,10 +13,11 @@ If you reuse passwords, you run the risk of hackers getting into your account. K
 ## Todo:
 - [x] Interface
 - [x] Create and delete passwords
-- [ ] Edit entries
-- [ ] Generate random passwords
+- [x] Edit entries
+- [x] Generate random passwords
 - [x] Search Password
 - [ ] Encrypt database
+- [ ] Configuration
 
 ## Installation Guide:
 Coming soon...
