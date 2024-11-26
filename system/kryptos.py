@@ -1,5 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+import string
+import random
 
 import sqlite3
 
@@ -158,6 +160,7 @@ def App():
         '''
         entry_window = tk.Toplevel(main)  # Use Toplevel for non-blocking
         entry_window.title("New account")
+        entry_window.minsize(400, 175)
 
         service_frame = tk.Frame(entry_window)
         service_frame.pack(pady=5, expand=True, fill="both")
@@ -165,15 +168,22 @@ def App():
         service_label.pack(side="left")
         service_var = tk.StringVar(service_frame)
         service_input = tk.Entry(service_frame, textvariable=service_var)
-        service_input.pack(side="right")
+        service_input.pack(side="right", fill="x", expand=True)
 
+        def generate_func():
+            '''
+            Wrapper for generating logic
+            '''
+            password_var.set(generate_password())
         password_frame = tk.Frame(entry_window)
         password_frame.pack(pady=5, expand=True, fill="both")
         password_label = tk.Label(password_frame, text="Password")
         password_label.pack(side="left")
         password_var = tk.StringVar(password_frame)
         password_input = tk.Entry(password_frame, textvariable=password_var)
-        password_input.pack(side="right")
+        password_input.pack(side="right", fill="x", expand=True)
+        generate_password_button = tk.Button(password_frame, text="Generate", command=generate_func)
+        generate_password_button.pack()
 
         username_frame = tk.Frame(entry_window)
         username_frame.pack(pady=5, expand=True, fill="both")
@@ -181,7 +191,7 @@ def App():
         username_label.pack(side="left")
         username_var = tk.StringVar(username_frame)
         username_input = tk.Entry(username_frame, textvariable=username_var)
-        username_input.pack(side="right")
+        username_input.pack(side="right", fill="x", expand=True)
 
         email_frame = tk.Frame(entry_window)
         email_frame.pack(pady=5, expand=True, fill="both")
@@ -189,7 +199,7 @@ def App():
         email_label.pack(side="left")
         email_var = tk.StringVar(email_frame)
         email_input = tk.Entry(email_frame, textvariable=email_var)
-        email_input.pack(side="right")
+        email_input.pack(side="right", fill="x", expand=True)
 
         def submit_func():
             '''
@@ -345,13 +355,29 @@ def App():
         except TypeError:
             print("TypeError")
 
-        cursor.execute('DELETE FROM passwords WHERE id = ?', (id,))
+        delete_entry(id)
         cursor.execute('INSERT INTO passwords (service, password, username, email) VALUES (?, ?, ?, ?)', 
                        (service, password, username, email))
 
         conn.commit()
         conn.close()
         return "Edited"
+
+    def generate_password():
+        '''
+        Generates a random string of a specific length.
+        
+        characters -- Array holding list of possible characters for generation
+        generated_password_length = Integer, length of generated string
+        '''
+        generated_password_length = 40
+        characters = []
+        characters.append(string.ascii_letters)
+        characters.append(string.punctuation)
+        characters.append(string.digits)
+        characters = ''.join(characters)
+        generated_password = ''.join(random.choice(characters) for i in range(generated_password_length))
+        return generated_password
 
     initialize_db()  # Initializes the database when the program starts
 
