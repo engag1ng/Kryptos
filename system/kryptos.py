@@ -3,6 +3,27 @@ from tkinter import ttk, messagebox
 
 import sqlite3
 
+class PlaceholderEntry(tk.Entry):
+    def __init__(self, master=None, placeholder="", **kwargs):
+        super().__init__(master, **kwargs)
+        self.placeholder = placeholder
+        self.bind("<FocusIn>", self.on_focus_in)
+        self.bind("<FocusOut>", self.on_focus_out)
+        self.insert(0, self.placeholder)
+        self.configure(fg="grey")
+    
+    def on_focus_in(self, event):
+        """Event handler for focus in."""
+        if self.get() == self.placeholder:
+            self.delete(0, tk.END)
+            self.configure(fg="black")
+
+    def on_focus_out(self, event):
+        """Event handler for focus out."""
+        if self.get() == "":
+            self.insert(0, self.placeholder)
+            self.configure(fg="grey")
+
 def App():
     main = tk.Tk()
     main.title("Kryptos")
@@ -56,8 +77,8 @@ def App():
         conn = connect_db()
         cursor = conn.cursor()
 
-        cursor.execute('SELECT COUNT(*) FROM passwords WHERE service = ? AND username = ? AND password = ? AND email = ?', 
-                       (service, username, password, email))
+        cursor.execute('SELECT COUNT(*) FROM passwords WHERE service = ? AND password = ? AND username = ? AND email = ?', 
+                       (service, password, username, email))
         exact_count = cursor.fetchone()[0]
 
         if exact_count > 0:
@@ -74,8 +95,8 @@ def App():
                 conn.close()
                 return "Added"
 
-        cursor.execute('INSERT INTO passwords (service, username, password, email) VALUES (?, ?, ?, ?)', 
-                       (service, username, password, email))
+        cursor.execute('INSERT INTO passwords (service, password, username, email) VALUES (?, ?, ?, ?)', 
+                       (service, password, username, email))
         conn.commit()
         conn.close()
 
@@ -108,6 +129,18 @@ def App():
                     treeview.delete(item)
                     break
 
+    def delete_selected_entry():
+        '''
+        Deletes the highlighted entry using on_delete().
+        '''
+        selected_item = treeview.selection()
+        if not selected_item:
+            messagebox.showwarning("Select Entry", "Please select an entry to delete.")
+            return
+        
+        entry_id = treeview.item(selected_item, 'values')[0]
+        on_delete(entry_id, treeview)
+
     def open_creation_window():
         '''
         Creates a new Tkinter window entry_window used for creating a new entry.
@@ -119,9 +152,9 @@ def App():
         _input -- The entry field
 
         service -- service or website
+        password -- password
         username -- optional, username
         email -- optional, linked email address
-        password -- password
         '''
         entry_window = tk.Toplevel(main)  # Use Toplevel for non-blocking
         entry_window.title("New account")
@@ -133,6 +166,14 @@ def App():
         service_var = tk.StringVar(service_frame)
         service_input = tk.Entry(service_frame, textvariable=service_var)
         service_input.pack(side="right")
+
+        password_frame = tk.Frame(entry_window)
+        password_frame.pack(pady=5, expand=True, fill="both")
+        password_label = tk.Label(password_frame, text="Password")
+        password_label.pack(side="left")
+        password_var = tk.StringVar(password_frame)
+        password_input = tk.Entry(password_frame, textvariable=password_var)
+        password_input.pack(side="right")
 
         username_frame = tk.Frame(entry_window)
         username_frame.pack(pady=5, expand=True, fill="both")
@@ -149,16 +190,11 @@ def App():
         email_var = tk.StringVar(email_frame)
         email_input = tk.Entry(email_frame, textvariable=email_var)
         email_input.pack(side="right")
-        
-        password_frame = tk.Frame(entry_window)
-        password_frame.pack(pady=5, expand=True, fill="both")
-        password_label = tk.Label(password_frame, text="Password")
-        password_label.pack(side="left")
-        password_var = tk.StringVar(password_frame)
-        password_input = tk.Entry(password_frame, textvariable=password_var)
-        password_input.pack(side="right")
 
         def submit_func():
+            '''
+            Wrapper for submitting logic. 
+            '''
             result = create_entry(service_var.get(), password_var.get(), username_var.get(), email_var.get())
             warning_var.set(result)
             if result == "Added":
@@ -212,6 +248,111 @@ def App():
             if any(query in str(value).lower() for value in row):
                 treeview.insert("", "end", values=row)
 
+    def edit_entry():
+        '''
+        Selectes item for editing and shows error if no item is selected. Calls open_editing_window with the selected item.
+        '''
+        selected_item = treeview.selection()
+        if not selected_item:
+            messagebox.showwarning("Select Entry", "Please select an entry to edit.")
+            return
+
+        open_editing_window(selected_item)
+
+    def open_editing_window(selected_item):
+        '''
+        Creates a new Tkinter window editing_window used for editing an entry.
+
+        All 4 inputs have:
+        _frame -- The frame for the input and all related items
+        _label -- A label displaying what's supposed to go into the entry field
+        _var -- A StringVar storing the input from the entry field
+        _input -- The entry field
+
+        service -- service or website
+        password -- password
+        username -- optional, username
+        email -- optional, linked email address
+        '''
+        editing_window = tk.Toplevel(main)  # Use Toplevel for non-blocking
+        editing_window.title("Edit entry")
+
+        service_frame = tk.Frame(editing_window)
+        service_frame.pack(pady=5, expand=True, fill="both")
+        service_label = tk.Label(service_frame, text="Service / Website")
+        service_label.pack(side="left")
+        service_var = tk.StringVar(service_frame)
+        service_input = PlaceholderEntry(service_frame, textvariable=service_var, placeholder=treeview.item(selected_item, 'values')[1]) #Old value from database
+        service_input.pack(side="right")
+
+        password_frame = tk.Frame(editing_window)
+        password_frame.pack(pady=5, expand=True, fill="both")
+        password_label = tk.Label(password_frame, text="Password")
+        password_label.pack(side="left")
+        password_var = tk.StringVar(password_frame)
+        password_input = PlaceholderEntry(password_frame, textvariable=password_var, placeholder=treeview.item(selected_item, 'values')[2]) #Old value from database
+        password_input.pack(side="right")
+
+        username_frame = tk.Frame(editing_window)
+        username_frame.pack(pady=5, expand=True, fill="both")
+        username_label = tk.Label(username_frame, text="Username")
+        username_label.pack(side="left")
+        username_var = tk.StringVar(username_frame)
+        username_input = PlaceholderEntry(username_frame, textvariable=username_var, placeholder=treeview.item(selected_item, 'values')[3]) #Old value from database
+        username_input.pack(side="right")
+
+        email_frame = tk.Frame(editing_window)
+        email_frame.pack(pady=5, expand=True, fill="both")
+        email_label = tk.Label(email_frame, text="Email")
+        email_label.pack(side="left")
+        email_var = tk.StringVar(email_frame)
+        email_input = PlaceholderEntry(email_frame, textvariable=email_var, placeholder=treeview.item(selected_item, 'values')[4]) #Old value from database
+        email_input.pack(side="right")
+
+        def submit_func():
+            '''
+            Wrapper for submitting logic.
+            '''
+            result = edit_entry_in_db(treeview.item(selected_item, 'values')[0], service_var.get(), password_var.get(), username_var.get(), email_var.get())
+            warning_var.set(result)
+            if result == "Edited":
+                refresh_treeview()  # Refresh the Treeview when entry is edited
+                editing_window.destroy()
+
+        submit_button = tk.Button(editing_window, text="Submit", command=submit_func)
+        submit_button.pack(pady=10)
+        warning_var = tk.StringVar(editing_window)
+        warning_label = tk.Label(editing_window, textvariable=warning_var)
+        warning_label.pack()
+
+    def edit_entry_in_db(id, service, password, username, email):
+        '''
+        Deletes the old entry and replaces it with new values or old values if no new one is specified.
+        '''
+        conn = connect_db()
+        cursor = conn.cursor()
+
+        selected_item = cursor.execute('SELECT * FROM passwords WHERE id = ?', (id,))
+        try:
+            if service == "":
+                service = selected_item[1]
+            if password == "":
+                passwords = selected_item[2]
+            if username == "":
+                username = selected_item[3]
+            if email == "":
+                email = selected_item[4]
+        except TypeError:
+            print("TypeError")
+
+        cursor.execute('DELETE FROM passwords WHERE id = ?', (id,))
+        cursor.execute('INSERT INTO passwords (service, password, username, email) VALUES (?, ?, ?, ?)', 
+                       (service, password, username, email))
+
+        conn.commit()
+        conn.close()
+        return "Edited"
+
     initialize_db()  # Initializes the database when the program starts
 
     # Tabview
@@ -241,7 +382,7 @@ def App():
     search_button = tk.Button(search_bar_frame, text="Search", command=search_entries)
     search_button.pack(pady=5, side="right")
 
-    treeview_columns = ("ID", "Service", "Username", "Password", "Email")
+    treeview_columns = ("ID", "Service", "Password", "Username", "Email")
     treeview = ttk.Treeview(home_tab, columns=treeview_columns, show='headings')
     for col in treeview_columns:
         treeview.heading(col, text=col)
@@ -249,20 +390,14 @@ def App():
     treeview.pack(expand=True, fill="both")
     populate_treeview(treeview)
 
-    def delete_selected_entry():
-        '''
-        Deletes the highlighted entry using on_delete().
-        '''
-        selected_item = treeview.selection()
-        if not selected_item:
-            messagebox.showwarning("Select Entry", "Please select an entry to delete.")
-            return
-        
-        entry_id = treeview.item(selected_item, 'values')[0]
-        on_delete(entry_id, treeview)
+    button_frame = tk.Frame(home_tab)
+    button_frame.pack()
 
-    delete_button = tk.Button(home_tab, text="Delete Selected Entry", command=delete_selected_entry)
-    delete_button.pack(pady=10)
+    delete_button = tk.Button(button_frame, text="Delete", command=delete_selected_entry)
+    delete_button.pack(pady=10, padx=10, side="left")
+
+    edit_button = tk.Button(button_frame, text="Edit", command=edit_entry)
+    edit_button.pack(pady=10, padx= 10, side="right")
 
     treeview_scrollbar = ttk.Scrollbar(home_tab, orient="vertical", command=treeview.yview)
     treeview.configure(yscroll=treeview_scrollbar.set)
