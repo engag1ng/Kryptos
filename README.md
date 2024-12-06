@@ -21,6 +21,7 @@ If you reuse passwords, you run the risk of hackers getting into your account. K
 - [ ] Multiple databases
 
 ## Installation Guide:
+pip install cryptography
 Coming soon...
 
 ## Contributions:
