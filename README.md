@@ -21,8 +21,17 @@ If you reuse passwords, you run the risk of hackers getting into your account. K
 - [ ] Multiple databases
 
 ## Installation Guide:
-pip install cryptography
-Coming soon...
+On Windows:
+1. Open your terminal
+2. Navigate to the directory
+3. Run:
+  $ venv\Scripts\activate
+
+On macOS/Linux:
+1. Open your terminal
+2. Navigate to the directory
+3. Run:
+  $ source venv/bin/activate
 
 ## Contributions:
 Pull requests and issues are open.
