@@ -2,10 +2,21 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import string
 import random
-
+import base64
 import sqlite3
+import hashlib
+import json
+
+from cryptography.fernet import Fernet
+
+version = "2.0.0"
+
+decryption_key = ""
 
 class PlaceholderEntry(tk.Entry):
+    '''
+    A copy of tk.Entry but with the added feature of being able to have a placeholder text.
+    '''
     def __init__(self, master=None, placeholder="", **kwargs):
         super().__init__(master, **kwargs)
         self.placeholder = placeholder
@@ -26,27 +37,23 @@ class PlaceholderEntry(tk.Entry):
             self.insert(0, self.placeholder)
             self.configure(fg="grey")
 
-def App():
-    main = tk.Tk()
-    main.title("Kryptos")
 
-    def connect_db():
-        '''Establishes connection to the SQLite database.'''
-        return sqlite3.connect('data.db')
+def connect_db():
+    '''Establishes connection to the SQLite database.'''
+    return sqlite3.connect('data.db')
 
-    def initialize_db():
-        '''Creates the database and table "passwords" if it doesn't already exist.
-        The table "passwords has 5 columns:
+def initialize_db():
+    '''Creates the database and table PASSWORDS if it doesn't already exist.
+    The table PASSWORDS has 5 columns:
 
-        id       -- Integer, Primary key, Autoincrement
-        service  -- String
-        password -- String
-        username -- String
-        email    -- String
-        '''
-        conn = connect_db()
+    id       -- Integer, Primary key, Autoincrement
+    service  -- String
+    password -- String
+    username -- String
+    email    -- String
+    '''
+    with connect_db() as conn:
         cursor = conn.cursor()
-
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS passwords (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -56,9 +63,68 @@ def App():
             email TEXT NOT NULL
         )
         ''')
-
         conn.commit()
-        conn.close()
+
+def generate_key_from_string(string):
+    """
+    Generates and returns a Fernet compatible base64-encoded 32-byte key from an input STRING.
+    """
+    key = hashlib.sha256(string.encode()).digest()
+    return base64.urlsafe_b64encode(key)
+
+def encrypt_database(key):
+    """
+    Takes one argument KEY and uses the cryptography library to encrypt the data.db file using KEY.
+    If the file is already encrypted, nothing happens.
+    Returns True if file was encrypted and False otherwise.
+    """
+    fernet = Fernet(generate_key_from_string(key))
+
+    with open('data.db', 'rb') as file:
+        content = file.read()
+
+    if content.startswith(b'SQLite'):
+        encrypted_content = fernet.encrypt(content)
+
+        with open('data.db', 'wb') as file:
+            file.write(encrypted_content)
+
+        return True 
+
+    else:
+        print("Already encrypted!")
+        return False
+
+def decrypt_database(key):
+    """
+    Takes one argument KEY and uses the cryptography library to deencrypt the data.db file using KEY. 
+    If KEY does not correctly decrypt the file, nothing happens.
+    Returns True if file was decrypted and False otherwise.
+    """
+
+    fernet = Fernet(generate_key_from_string(key))
+
+    with open('data.db', 'rb') as file:
+        encrypted_content = file.read()
+        if encrypted_content.startswith(b'SQLite'):
+            print("Already decrypted")
+            return True
+    try:
+        decrypted_content = fernet.decrypt(encrypted_content)
+        with open('data.db', 'wb') as file:
+            file.write(decrypted_content)
+        return True
+    except Exception:
+        print("Wrong Decryption key")
+        return False
+        
+
+def App():
+    '''
+    Creates the main application Tkinter window. Also holds all functions necessary.
+    '''
+    main = tk.Tk()
+    main.title("Kryptos")
 
     def create_entry(service, password, username="", email=""):
         '''
@@ -75,34 +141,37 @@ def App():
         '''
         if service == "" or password == "":
             return "Service or password not specified!"
+        return_value = "Already exists"
 
-        conn = connect_db()
-        cursor = conn.cursor()
+        decrypt_database(decryption_key)
 
-        cursor.execute('SELECT COUNT(*) FROM passwords WHERE service = ? AND password = ? AND username = ? AND email = ?', 
-                       (service, password, username, email))
-        exact_count = cursor.fetchone()[0]
+        with connect_db() as conn:
+            cursor = conn.cursor()
 
-        if exact_count > 0:
-            conn.close()
-            return "Already exists"
+            cursor.execute('SELECT COUNT(*) FROM passwords WHERE service = ? AND password = ? AND username = ? AND email = ?', 
+                        (service, password, username, email))
+            exact_count = cursor.fetchone()[0]
 
-        cursor.execute('SELECT COUNT(*) FROM passwords WHERE service = ? AND (username = ? OR email = ?)', 
-                       (service, username, email))
-        similar_count = cursor.fetchone()[0]
+            if exact_count == 0:
+                cursor.execute('SELECT COUNT(*) FROM passwords WHERE service = ? AND (username = ? OR email = ?)', 
+                        (service, username, email))
+                similar_count = cursor.fetchone()[0]
 
-        if similar_count > 0:
-            continue_box = messagebox.askquestion("Continue?", "Similar entry found. Do you want to continue?")
-            if continue_box == "no":
-                conn.close()
-                return "Added"
+                if similar_count == 0:
+                    cursor.execute('INSERT INTO passwords (service, password, username, email) VALUES (?, ?, ?, ?)', 
+                                (service, password, username, email))
+                    
+                    return_value = "Added"
+                else:
+                    continue_box = messagebox.askquestion("Continue?", "Similar entry found. Do you want to continue?")
+                    if continue_box == "yes":
+                        cursor.execute('INSERT INTO passwords (service, password, username, email) VALUES (?, ?, ?, ?)', 
+                                    (service, password, username, email))
+                        return_value = "Added"
 
-        cursor.execute('INSERT INTO passwords (service, password, username, email) VALUES (?, ?, ?, ?)', 
-                       (service, password, username, email))
-        conn.commit()
-        conn.close()
-
-        return "Added"
+            conn.commit()
+        encrypt_database(decryption_key)
+        return return_value
 
     def delete_entry(entry_id):
         '''
@@ -110,11 +179,12 @@ def App():
 
         entry_id -- Id of the entry that's being deleted
         '''
-        conn = connect_db()
-        cursor = conn.cursor()
-        cursor.execute('DELETE FROM passwords WHERE id = ?', (entry_id,))
-        conn.commit()
-        conn.close()
+        decrypt_database(decryption_key)
+        with connect_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM passwords WHERE id = ?', (entry_id,))
+            conn.commit()
+        encrypt_database(decryption_key)
 
     def on_delete(entry_id, treeview):
         '''
@@ -145,7 +215,7 @@ def App():
 
     def open_creation_window():
         '''
-        Creates a new Tkinter window entry_window used for creating a new entry.
+        Creates a new Tkinter window ENTRY_WINDOW used for creating a new entry.
 
         All 4 inputs have:
         _frame -- The frame for the input and all related items
@@ -219,20 +289,21 @@ def App():
 
     def populate_treeview(treeview):
         '''
-        Fills the treeview with data from the table "passwords" in the database
+        Fills the TREEVIEW with data from the table PASSWORDS in the database
         '''
-        conn = connect_db()
-        cursor = conn.cursor()
-        cursor.execute('SELECT * from passwords')
-        entries = cursor.fetchall()
-        conn.close()
+        decrypt_database(decryption_key)
+        with connect_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT * from passwords')
+            entries = cursor.fetchall()
+        encrypt_database(decryption_key)
 
         for row in entries:
             treeview.insert("", "end", values=row)
 
     def refresh_treeview():
         '''
-        Clears and repopulates the Treeview with current database entries using populate_treeview().
+        Clears and repopulates the TREEVIEW with current database entries using POPULATE_TREEVIEW().
         '''
         for item in treeview.get_children():
             treeview.delete(item)
@@ -240,7 +311,7 @@ def App():
 
     def search_entries():
         '''
-        Filters the Treeview based on the search query.
+        Filters the TREEVIEW based on the search query.
         
         search_var -- StringVar holding query
         '''
@@ -248,11 +319,12 @@ def App():
         for item in treeview.get_children():
             treeview.delete(item)
 
-        conn = connect_db()
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM passwords')
-        entries = cursor.fetchall()
-        conn.close()
+        decrypt_database(decryption_key)
+        with connect_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM passwords')
+            entries = cursor.fetchall()
+        encrypt_database(decryption_key)
 
         for row in entries:
             if any(query in str(value).lower() for value in row):
@@ -260,7 +332,7 @@ def App():
 
     def edit_entry():
         '''
-        Selectes item for editing and shows error if no item is selected. Calls open_editing_window with the selected item.
+        Selectes item for editing and shows error if no item is selected. Calls OPEN_EDITING_WINDOW() with the selected item.
         '''
         selected_item = treeview.selection()
         if not selected_item:
@@ -271,7 +343,7 @@ def App():
 
     def open_editing_window(selected_item):
         '''
-        Creates a new Tkinter window editing_window used for editing an entry.
+        Creates a new Tkinter window EDITING_WINDOW used for editing an entry.
 
         All 4 inputs have:
         _frame -- The frame for the input and all related items
@@ -339,33 +411,32 @@ def App():
         '''
         Deletes the old entry and replaces it with new values or old values if no new one is specified.
         '''
-        conn = connect_db()
-        cursor = conn.cursor()
+        decrypt_database(decryption_key)
+        with connect_db() as conn:
+            cursor = conn.cursor()
 
-        selected_item = cursor.execute('SELECT * FROM passwords WHERE id = ?', (id,))
-        try:
-            if service == "":
-                service = selected_item[1]
-            if password == "":
-                passwords = selected_item[2]
-            if username == "":
-                username = selected_item[3]
-            if email == "":
-                email = selected_item[4]
-        except TypeError:
-            print("TypeError")
-
-        delete_entry(id)
-        cursor.execute('INSERT INTO passwords (service, password, username, email) VALUES (?, ?, ?, ?)', 
-                       (service, password, username, email))
-
-        conn.commit()
-        conn.close()
+            selected_item = cursor.execute('SELECT * FROM passwords WHERE id = ?', (id,))
+            try:
+                if service == "":
+                    service = selected_item[1]
+                if password == "":
+                    passwords = selected_item[2]
+                if username == "":
+                    username = selected_item[3]
+                if email == "":
+                    email = selected_item[4]
+            except TypeError:
+                print("TypeError")
+            cursor.execute('DELETE FROM passwords WHERE id = ?', (id,)) # Using delete_entry() raises 'Database is locked error'. I don't f** know why :)
+            cursor.execute('INSERT INTO passwords (service, password, username, email) VALUES (?, ?, ?, ?)', 
+                        (service, password, username, email))
+            conn.commit()
+        encrypt_database(decryption_key)
         return "Edited"
 
     def generate_password():
         '''
-        Generates a random string of a specific length.
+        Generates a random string GENERATED_PASSWORD of a specific length.
         
         characters -- Array holding list of possible characters for generation
         generated_password_length = Integer, length of generated string
@@ -379,7 +450,10 @@ def App():
         generated_password = ''.join(random.choice(characters) for i in range(generated_password_length))
         return generated_password
 
-    initialize_db()  # Initializes the database when the program starts
+    try: # Initializes database in startup() on first execution -> this will raise error as database is encrypted.
+        initialize_db()  # Initializes the database when the program starts
+    except sqlite3.DatabaseError:
+        print("Already initialized")
 
     # Tabview
     tabview = ttk.Notebook(main)
@@ -433,5 +507,92 @@ def App():
     
 
     main.mainloop()
+
+def startup():
+    '''
+    Creates the CONFIG_FILE with the standard config if it doesn't exist already. Also creates the STARTUP_SCREEN if the database is unencrypted.
+    Returns CONFIG.
+    '''
+    try:
+        with open('config.json', 'x', encoding='utf-8') as config_file:
+            standard_config = {"length": 40, "ascii_letters": True, "digits": True, "punctuation": True}
+        with open('config.json', 'w', encoding='utf-8') as config_file:
+            json.dump(standard_config, config_file)
+
+        initialize_db()
+    except FileExistsError:
+        print("File already exists")
+    with open('data.db', 'rb') as file:
+        content = file.read()
+    if content.startswith(b'SQLite'):
+        setup_screen = tk.Tk()
+        setup_screen.title("Setup")
+        setup_screen.minsize(525, 200)
+
+        intro_text = f"""WELCOME. Thank you for choosing Kryptos as your password manager. 
+        This is version {version}. For updates, release notes or documentation please visit 
+        https://github.com/engag1ng/Kryptos. To get started please set an encryption password.
+        """
+
+        introduction = tk.Label(setup_screen, text=intro_text)
+        introduction.pack(padx=20, pady=20)
+
+        password_input_label = tk.Label(setup_screen, text="Please input an encryption password for your database. Store this in a secure place.\nYou will need it everytime you login to your database. This can later be changed in the settings.")
+        password_input_label.pack()
+        password_input_var = tk.StringVar(setup_screen)
+        password_input = tk.Entry(setup_screen, textvariable=password_input_var)
+        password_input.pack()
+
+        def done_func():
+            '''Wrapper for DONE_BUTTON press logic'''
+            if password_input_var.get() != "":
+                encrypt_database(password_input_var.get())
+                setup_screen.destroy()
+        done_button = tk.Button(setup_screen, text="Done", command=done_func)
+        done_button.pack()
+
+        def on_closing():
+            '''Prevents user from closing window without choosing password'''
+            startup()
+        setup_screen.protocol("WM_DELETE_WINDOW", on_closing)
+
+        setup_screen.mainloop()
+
+    with open('config.json', 'r') as config_file:
+        config = json.load(config_file)
+
+    return config
+
+def decryption_window():
+    '''Creates Tkinter window that asks for DECRYPTION_KEY when program is started. Sets the DECRYPTION_KEY variable for the rest of the execution.'''
+    decryption_screen = tk.Tk()
+    decryption_screen.title("Decrypt Database")
+
+    password_input_label = tk.Label(decryption_screen, text="Input Database Password!")
+    password_input_label.pack()
+    password_input_var = tk.StringVar(decryption_screen)
+    password_input = tk.Entry(decryption_screen, textvariable=password_input_var)
+    password_input.pack()
+
+    def on_button():
+        '''Wrapper for button press logic'''
+        if password_input_var.get() != "" and decrypt_database(password_input_var.get()):
+            global decryption_key
+            decryption_key = password_input_var.get()
+            encrypt_database(decryption_key)
+            decryption_screen.destroy()
+    password_input_button = tk.Button(decryption_screen, text="Decrypt", command=on_button)
+    password_input_button.pack()
+
+    def on_closing():
+        '''Prevents user from closing the window without decrypting'''
+        print("No closing allowed -_-")
+    decryption_screen.protocol("WM_DELETE_WINDOW", on_closing)
+
+    decryption_screen.mainloop()
+
+config = startup()
+
+decryption_window()
 
 App()
