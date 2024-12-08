@@ -19,6 +19,7 @@ If you reuse passwords, you run the risk of hackers getting into your account. K
 - [ ] Encrypt database
 - [ ] Configuration
 - [ ] Multiple databases
+- [ ] Brute-Force Prove Decryption
 
 ## Installation Guide:
 On Windows:
