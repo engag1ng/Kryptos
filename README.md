@@ -26,21 +26,28 @@ If you reuse passwords, you run the risk of hackers getting into your account. K
 ## Usage:
 ### Prerequisites
 - Python 3.x
+- cryptography module (`pip install cryptography`)
 ### Installation
 1. Download release
-2. Open your terminal
-3. Navigate to ./system
+
+---
+Optional running in virtual environment (recommended):
+1. Open your terminal
+2. Navigate to ./system
+3. `python3 -m venv kryptos`
 4. Windows:
 ```
-$ venv\Scripts\activate
+$ kryptos\Scripts\activate
 ```
-4. Linux/MacOs:
+3. Linux/MacOs:
 ```
-$ source venv/bin/activate
+$ source kryptos/bin/activate
 ```
-5. Run `kryptos.py`.
+5. Install [prerequisites](#prerequisites)
+---
+2. Run `kryptos.py`.
 
 ## Contributions:
 Pull requests and issues are open.
 
-engag1ng
+- engag1ng
