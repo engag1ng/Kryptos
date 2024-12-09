@@ -21,7 +21,7 @@ If you reuse passwords, you run the risk of hackers getting into your account. K
 - [x] Encryted database (by default)
 - [ ] Configuration
 - [ ] Multiple databases
-- [ ] Brute-Force Prove Decryption
+- [ ] Translation
 
 ## Usage:
 ### Prerequisites
