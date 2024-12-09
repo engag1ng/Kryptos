@@ -28,12 +28,13 @@ If you reuse passwords, you run the risk of hackers getting into your account. K
 - Python 3.x
 - cryptography module (`pip install cryptography`)
 ### Installation
-1. Download release
-
+0. Download Python package from the offical website and open the installation file. Folow the steps described by the installer. [Windows](https://www.python.org/downloads/windows/) [MacOS](https://www.python.org/downloads/macos/) (for Linux please inform yourself depending on your OS)
+1. Download latest Kryptos [release](https://github.com/engag1ng/Kryptos/releases/tag/v2.0.0).
+2. Put the downloaded `kryptos.py` file where ever you want.
 ---
 Optional running in virtual environment (recommended):
 1. Open your terminal
-2. Navigate to ./system
+2. Navigate to the folder with `kryptos.py` in it.
 3. `python3 -m venv kryptos`
 4. Windows:
 ```
@@ -45,8 +46,9 @@ $ source kryptos/bin/activate
 ```
 5. Install [prerequisites](#prerequisites)
 ---
-2. Run `kryptos.py`.
+3. Run `kryptos.py`.
 
+From then on you can just run the `kryptos.py` file to start Kryptos.
 ## Contributions:
 Pull requests and issues are open.
 
