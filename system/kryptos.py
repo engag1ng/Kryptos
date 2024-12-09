@@ -125,6 +125,7 @@ def App():
     '''
     main = tk.Tk()
     main.title("Kryptos")
+    main.minsize(300, 400)
 
     def create_entry(service, password, username="", email=""):
         '''
@@ -240,11 +241,6 @@ def App():
         service_input = tk.Entry(service_frame, textvariable=service_var)
         service_input.pack(side="right", fill="x", expand=True)
 
-        def generate_func():
-            '''
-            Wrapper for generating logic
-            '''
-            password_var.set(generate_password())
         password_frame = tk.Frame(entry_window)
         password_frame.pack(pady=5, expand=True, fill="both")
         password_label = tk.Label(password_frame, text="Password")
@@ -252,7 +248,7 @@ def App():
         password_var = tk.StringVar(password_frame)
         password_input = tk.Entry(password_frame, textvariable=password_var)
         password_input.pack(side="right", fill="x", expand=True)
-        generate_password_button = tk.Button(password_frame, text="Generate", command=generate_func)
+        generate_password_button = tk.Button(password_frame, text="Generate", command=lambda: password_var.set(generate_password()))
         generate_password_button.pack()
 
         username_frame = tk.Frame(entry_window)
@@ -358,6 +354,8 @@ def App():
         '''
         editing_window = tk.Toplevel(main)  # Use Toplevel for non-blocking
         editing_window.title("Edit entry")
+        editing_window.minsize(220, 200)
+        editing_window.resizable(True, False)
 
         service_frame = tk.Frame(editing_window)
         service_frame.pack(pady=5, expand=True, fill="both")
@@ -365,7 +363,7 @@ def App():
         service_label.pack(side="left")
         service_var = tk.StringVar(service_frame)
         service_input = PlaceholderEntry(service_frame, textvariable=service_var, placeholder=treeview.item(selected_item, 'values')[1]) #Old value from database
-        service_input.pack(side="right")
+        service_input.pack(side="right", fill="x", expand=True)
 
         password_frame = tk.Frame(editing_window)
         password_frame.pack(pady=5, expand=True, fill="both")
@@ -373,7 +371,7 @@ def App():
         password_label.pack(side="left")
         password_var = tk.StringVar(password_frame)
         password_input = PlaceholderEntry(password_frame, textvariable=password_var, placeholder=treeview.item(selected_item, 'values')[2]) #Old value from database
-        password_input.pack(side="right")
+        password_input.pack(side="right", fill="x", expand=True)
 
         username_frame = tk.Frame(editing_window)
         username_frame.pack(pady=5, expand=True, fill="both")
@@ -381,7 +379,7 @@ def App():
         username_label.pack(side="left")
         username_var = tk.StringVar(username_frame)
         username_input = PlaceholderEntry(username_frame, textvariable=username_var, placeholder=treeview.item(selected_item, 'values')[3]) #Old value from database
-        username_input.pack(side="right")
+        username_input.pack(side="right", fill="x", expand=True)
 
         email_frame = tk.Frame(editing_window)
         email_frame.pack(pady=5, expand=True, fill="both")
@@ -389,7 +387,7 @@ def App():
         email_label.pack(side="left")
         email_var = tk.StringVar(email_frame)
         email_input = PlaceholderEntry(email_frame, textvariable=email_var, placeholder=treeview.item(selected_item, 'values')[4]) #Old value from database
-        email_input.pack(side="right")
+        email_input.pack(side="right", fill="x", expand=True)
 
         def submit_func():
             '''
@@ -450,6 +448,25 @@ def App():
         generated_password = ''.join(random.choice(characters) for i in range(generated_password_length))
         return generated_password
 
+    def copy_password(treeview):
+        '''
+        Copies the PASSWORD from SELECTED_ENTRY to the clipboard.
+
+        treeview -- Treeview from main window
+        '''
+        selected_item = treeview.selection()
+
+        if not selected_item:
+            messagebox.showinfo("Select Entry", "Please select an entry.")
+            return
+        
+        item = treeview.item(selected_item)
+        password = item['values'][2]
+
+        main.clipboard_clear()
+        main.clipboard_append(password)
+        main.update()
+
     try: # Initializes database in startup() on first execution -> this will raise error as database is encrypted.
         initialize_db()  # Initializes the database when the program starts
     except sqlite3.DatabaseError:
@@ -497,7 +514,10 @@ def App():
     delete_button.pack(pady=10, padx=10, side="left")
 
     edit_button = tk.Button(button_frame, text="Edit", command=edit_entry)
-    edit_button.pack(pady=10, padx= 10, side="right")
+    edit_button.pack(pady=10, padx= 10, side="left")
+
+    copy_button = tk.Button(button_frame, text="Copy", command=lambda: copy_password(treeview))
+    copy_button.pack(pady=10, padx=10, side="right")
 
     treeview_scrollbar = ttk.Scrollbar(home_tab, orient="vertical", command=treeview.yview)
     treeview.configure(yscroll=treeview_scrollbar.set)
@@ -528,6 +548,7 @@ def startup():
         setup_screen = tk.Tk()
         setup_screen.title("Setup")
         setup_screen.minsize(525, 200)
+        setup_screen.resizable(False, False)
 
         intro_text = f"""WELCOME. Thank you for choosing Kryptos as your password manager. 
         This is version {version}. For updates, release notes or documentation please visit 
@@ -551,10 +572,7 @@ def startup():
         done_button = tk.Button(setup_screen, text="Done", command=done_func)
         done_button.pack()
 
-        def on_closing():
-            '''Prevents user from closing window without choosing password'''
-            startup()
-        setup_screen.protocol("WM_DELETE_WINDOW", on_closing)
+        setup_screen.protocol("WM_DELETE_WINDOW", lambda: startup())
 
         setup_screen.mainloop()
 
@@ -567,6 +585,7 @@ def decryption_window():
     '''Creates Tkinter window that asks for DECRYPTION_KEY when program is started. Sets the DECRYPTION_KEY variable for the rest of the execution.'''
     decryption_screen = tk.Tk()
     decryption_screen.title("Decrypt Database")
+    decryption_screen.resizable(False, False)
 
     password_input_label = tk.Label(decryption_screen, text="Input Database Password!")
     password_input_label.pack()
@@ -584,10 +603,7 @@ def decryption_window():
     password_input_button = tk.Button(decryption_screen, text="Decrypt", command=on_button)
     password_input_button.pack()
 
-    def on_closing():
-        '''Prevents user from closing the window without decrypting'''
-        print("No closing allowed -_-")
-    decryption_screen.protocol("WM_DELETE_WINDOW", on_closing)
+    decryption_screen.protocol("WM_DELETE_WINDOW", lambda: print("No closing allowed -_-"))
 
     decryption_screen.mainloop()
 
