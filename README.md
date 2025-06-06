@@ -10,7 +10,7 @@ Kryptos is a modern password manager completely written in Python.
 ## 🚀 About
 If you reuse passwords, you significantly increase the risk of getting hacked. This is why you should use a password manager. Kryptos generates, stores and searches unique passwords for all your accounts, makes the data transferable across devices and keeps you safe online.
 
-I was interested in cryptography and the inner workings of password managers (And also needed one myself at the time), so I decided to build one myself. Kryptos was an amazing project that has tought me a lot about how encryption works, how to handle UI's and backend functions. I really hope you enjoy Kryptos. I will try to add more features and support for more platforms in the future. If you would like to contribute please read [here]("##🤝Contributions"). 
+I was interested in cryptography and the inner workings of password managers (And also needed one myself at the time), so I decided to build one myself. Kryptos was an amazing project that has tought me a lot about how encryption works, how to handle UI's and backend functions. I really hope you enjoy Kryptos. I will try to add more features and support for more platforms in the future. If you would like to contribute please read the contributions section. 
 
 ## 📝 Getting started
 ### Prerequisites
