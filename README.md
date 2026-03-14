@@ -60,6 +60,3 @@ Run `kryptos.py`.
 
 ## 📃 License
 This project is MIT licensed. Please have a look at the LICENSE.md for more information.
-
-## 🗨️ Contact
-Please contact me under constantin.reinhold@gmx.net
